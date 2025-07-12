@@ -1,0 +1,1795 @@
+openapi: 3.0.3
+info:
+  title: Time Management API
+  description: API para aplicativo de gestão de tempo desenvolvido em Flutter
+  version: 1.0.0
+  contact:
+    name: Time Management Team
+    email: support@timemanagement.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080/api
+    description: Servidor de desenvolvimento
+  - url: https://api.timemanagement.com/api
+    description: Servidor de produção
+
+security:
+  - BearerAuth: []
+
+paths:
+  # =============================================================================
+  # AUTHENTICATION ENDPOINTS
+  # =============================================================================
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login do usuário
+      description: Autentica um usuário e retorna token JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: "user@example.com"
+              password: "password123"
+      responses:
+        '200':
+          description: Login realizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Credenciais inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Dados de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Registro de novo usuário
+      description: Cria uma nova conta de usuário
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              name: "João Silva"
+              email: "joao@example.com"
+              password: "password123"
+      responses:
+        '201':
+          description: Usuário criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '409':
+          description: Email já existe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Dados de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Renovar token JWT
+      description: Gera um novo token JWT usando o token atual
+      responses:
+        '200':
+          description: Token renovado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Token inválido ou expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout do usuário
+      description: Invalida o token JWT atual
+      responses:
+        '200':
+          description: Logout realizado com sucesso
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # =============================================================================
+  # TASKS ENDPOINTS
+  # =============================================================================
+  /tasks:
+    get:
+      tags:
+        - Tasks
+      summary: Listar tarefas
+      description: Retorna todas as tarefas do usuário com filtros opcionais
+      parameters:
+        - name: status
+          in: query
+          description: Filtrar por status da tarefa
+          schema:
+            $ref: '#/components/schemas/TaskStatus'
+        - name: priority
+          in: query
+          description: Filtrar por prioridade da tarefa
+          schema:
+            $ref: '#/components/schemas/TaskPriority'
+        - name: categoryId
+          in: query
+          description: Filtrar por ID da categoria
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista de tarefas retornada com sucesso
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Tasks
+      summary: Criar nova tarefa
+      description: Cria uma nova tarefa para o usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+            example:
+              title: "Implementar API de autenticação"
+              description: "Desenvolver endpoints de login e registro"
+              priority: "HIGH"
+              dueDate: "2025-07-15T09:00:00Z"
+              estimatedTime: 240
+              categoryId: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '201':
+          description: Tarefa criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Dados de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tasks/{id}:
+    get:
+      tags:
+        - Tasks
+      summary: Obter tarefa por ID
+      description: Retorna uma tarefa específica pelo ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID da tarefa
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Tarefa encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          description: Tarefa não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Tasks
+      summary: Atualizar tarefa
+      description: Atualiza uma tarefa existente
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID da tarefa
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+      responses:
+        '200':
+          description: Tarefa atualizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          description: Tarefa não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Dados de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Tasks
+      summary: Deletar tarefa
+      description: Remove uma tarefa do sistema
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID da tarefa
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Tarefa deletada com sucesso
+        '404':
+          description: Tarefa não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tasks/{id}/toggle:
+    patch:
+      tags:
+        - Tasks
+      summary: Alternar status de conclusão da tarefa
+      description: Alterna o status da tarefa entre concluída e não concluída
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID da tarefa
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Status da tarefa alternado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          description: Tarefa não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tasks/{id}/complete:
+    patch:
+      tags:
+        - Tasks
+      summary: Marcar tarefa como concluída
+      description: Marca uma tarefa como concluída
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID da tarefa
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Tarefa marcada como concluída
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          description: Tarefa não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tasks/overdue:
+    get:
+      tags:
+        - Tasks
+      summary: Listar tarefas atrasadas
+      description: Retorna todas as tarefas que passaram do prazo
+      responses:
+        '200':
+          description: Lista de tarefas atrasadas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tasks/today:
+    get:
+      tags:
+        - Tasks
+      summary: Listar tarefas de hoje
+      description: Retorna todas as tarefas com prazo para hoje
+      responses:
+        '200':
+          description: Lista de tarefas de hoje
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tasks/stats:
+    get:
+      tags:
+        - Tasks
+      summary: Obter estatísticas das tarefas
+      description: Retorna estatísticas detalhadas das tarefas do usuário
+      responses:
+        '200':
+          description: Estatísticas das tarefas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskStatsResponse'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # =============================================================================
+  # TIME ENTRIES ENDPOINTS
+  # =============================================================================
+  /time-entries:
+    get:
+      tags:
+        - Time Entries
+      summary: Listar registros de tempo
+      description: Retorna todos os registros de tempo do usuário com filtros opcionais
+      parameters:
+        - name: taskId
+          in: query
+          description: Filtrar por ID da tarefa
+          schema:
+            type: string
+            format: uuid
+        - name: startDate
+          in: query
+          description: Data de início do período de filtro
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          description: Data de fim do período de filtro
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Lista de registros de tempo
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TimeEntry'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Time Entries
+      summary: Criar novo registro de tempo
+      description: Cria um novo registro de tempo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTimeEntryRequest'
+      responses:
+        '201':
+          description: Registro de tempo criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntry'
+        '400':
+          description: Dados de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /time-entries/{id}:
+    get:
+      tags:
+        - Time Entries
+      summary: Obter registro de tempo por ID
+      description: Retorna um registro de tempo específico pelo ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID do registro de tempo
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Registro de tempo encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntry'
+        '404':
+          description: Registro não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Time Entries
+      summary: Atualizar registro de tempo
+      description: Atualiza um registro de tempo existente
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID do registro de tempo
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTimeEntryRequest'
+      responses:
+        '200':
+          description: Registro atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntry'
+        '404':
+          description: Registro não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Dados de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Time Entries
+      summary: Deletar registro de tempo
+      description: Remove um registro de tempo do sistema
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID do registro de tempo
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Registro deletado com sucesso
+        '404':
+          description: Registro não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /time-entries/start:
+    post:
+      tags:
+        - Time Entries
+      summary: Iniciar cronômetro
+      description: Inicia um novo cronômetro para uma tarefa
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartTimerRequest'
+            example:
+              taskId: "550e8400-e29b-41d4-a716-446655440000"
+              description: "Trabalhando na implementação da API"
+      responses:
+        '201':
+          description: Cronômetro iniciado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntry'
+        '400':
+          description: Dados de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /time-entries/{id}/stop:
+    post:
+      tags:
+        - Time Entries
+      summary: Parar cronômetro
+      description: Para um cronômetro em execução
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID do registro de tempo ativo
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Cronômetro parado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntry'
+        '404':
+          description: Registro não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Cronômetro não está ativo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /time-entries/running:
+    get:
+      tags:
+        - Time Entries
+      summary: Obter cronômetro ativo
+      description: Retorna o cronômetro atualmente em execução (se houver)
+      responses:
+        '200':
+          description: Cronômetro ativo encontrado (ou null se nenhum ativo)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/TimeEntry'
+                nullable: true
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /time-entries/today:
+    get:
+      tags:
+        - Time Entries
+      summary: Listar registros de hoje
+      description: Retorna todos os registros de tempo de hoje
+      responses:
+        '200':
+          description: Lista de registros de hoje
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TimeEntry'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /time-entries/total-time/{taskId}:
+    get:
+      tags:
+        - Time Entries
+      summary: Obter tempo total de uma tarefa
+      description: Retorna o tempo total trabalhado em uma tarefa específica
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          description: ID da tarefa
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Tempo total da tarefa
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalTime:
+                    type: integer
+                    description: Tempo total em segundos
+                    example: 7200
+        '404':
+          description: Tarefa não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /time-entries/stats:
+    get:
+      tags:
+        - Time Entries
+      summary: Obter estatísticas de tempo
+      description: Retorna estatísticas detalhadas dos registros de tempo
+      parameters:
+        - name: startDate
+          in: query
+          description: Data de início do período
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          description: Data de fim do período
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Estatísticas de tempo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeStatsResponse'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # =============================================================================
+  # CATEGORIES ENDPOINTS
+  # =============================================================================
+  /categories:
+    get:
+      tags:
+        - Categories
+      summary: Listar categorias
+      description: Retorna todas as categorias do usuário
+      responses:
+        '200':
+          description: Lista de categorias
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Categories
+      summary: Criar nova categoria
+      description: Cria uma nova categoria para o usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCategoryRequest'
+            example:
+              name: "Desenvolvimento"
+              color: "#2196F3"
+              description: "Tarefas relacionadas ao desenvolvimento de software"
+      responses:
+        '201':
+          description: Categoria criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          description: Dados de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /categories/{id}:
+    get:
+      tags:
+        - Categories
+      summary: Obter categoria por ID
+      description: Retorna uma categoria específica pelo ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID da categoria
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Categoria encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '404':
+          description: Categoria não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Categories
+      summary: Atualizar categoria
+      description: Atualiza uma categoria existente
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID da categoria
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCategoryRequest'
+      responses:
+        '200':
+          description: Categoria atualizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '404':
+          description: Categoria não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Dados de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Categories
+      summary: Deletar categoria
+      description: Remove uma categoria do sistema
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID da categoria
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Categoria deletada com sucesso
+        '404':
+          description: Categoria não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Categoria possui tarefas associadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /categories/most-used:
+    get:
+      tags:
+        - Categories
+      summary: Listar categorias mais usadas
+      description: Retorna as categorias mais utilizadas pelo usuário
+      parameters:
+        - name: limit
+          in: query
+          description: Número máximo de categorias a retornar
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 5
+      responses:
+        '200':
+          description: Lista de categorias mais usadas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /categories/{id}/can-delete:
+    get:
+      tags:
+        - Categories
+      summary: Verificar se categoria pode ser deletada
+      description: Verifica se uma categoria pode ser deletada (não possui tarefas associadas)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID da categoria
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Resultado da verificação
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  canDelete:
+                    type: boolean
+                    description: Se a categoria pode ser deletada
+                    example: true
+        '404':
+          description: Categoria não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Token inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+# =============================================================================
+# COMPONENTS
+# =============================================================================
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 'Token JWT obtido através do endpoint de login'
+
+  schemas:
+    # =============================================================================
+    # AUTHENTICATION SCHEMAS
+    # =============================================================================
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email do usuário
+          example: "user@example.com"
+        password:
+          type: string
+          minLength: 6
+          description: Senha do usuário
+          example: "password123"
+
+    RegisterRequest:
+      type: object
+      required:
+        - name
+        - email
+        - password
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: Nome completo do usuário
+          example: "João Silva"
+        email:
+          type: string
+          format: email
+          description: Email único do usuário
+          example: "joao@example.com"
+        password:
+          type: string
+          minLength: 6
+          description: Senha do usuário
+          example: "password123"
+
+    AuthResponse:
+      type: object
+      required:
+        - token
+        - user
+      properties:
+        token:
+          type: string
+          description: Token JWT para autenticação
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        user:
+          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      required:
+        - id
+        - name
+        - email
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID único do usuário
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          description: Nome do usuário
+          example: "João Silva"
+        email:
+          type: string
+          format: email
+          description: Email do usuário
+          example: "joao@example.com"
+        avatar:
+          type: string
+          nullable: true
+          description: URL da foto de perfil
+          example: "https://example.com/avatar.jpg"
+        createdAt:
+          type: string
+          format: date-time
+          description: Data de criação da conta
+          example: "2025-01-01T00:00:00Z"
+        preferences:
+          type: object
+          nullable: true
+          description: Preferências do usuário
+          properties:
+            enableNotifications:
+              type: boolean
+              default: true
+            reminderMinutesBefore:
+              type: integer
+              default: 15
+            timeFormat:
+              type: string
+              enum: ["12h", "24h"]
+              default: "24h"
+            dateFormat:
+              type: string
+              default: "dd/MM/yyyy"
+            enableSounds:
+              type: boolean
+              default: true
+
+    # =============================================================================
+    # TASK SCHEMAS
+    # =============================================================================
+    Task:
+      type: object
+      required:
+        - id
+        - title
+        - priority
+        - status
+        - userId
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID único da tarefa
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        title:
+          type: string
+          description: Título da tarefa
+          example: "Implementar API de autenticação"
+        description:
+          type: string
+          nullable: true
+          description: Descrição detalhada da tarefa
+          example: "Desenvolver endpoints de login e registro com JWT"
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        dueDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Data de vencimento da tarefa
+          example: "2025-07-15T09:00:00Z"
+        estimatedTime:
+          type: integer
+          nullable: true
+          minimum: 1
+          description: Tempo estimado em minutos
+          example: 240
+        categoryId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID da categoria associada
+          example: "550e8400-e29b-41d4-a716-446655440001"
+        userId:
+          type: string
+          format: uuid
+          description: ID do usuário proprietário
+          example: "550e8400-e29b-41d4-a716-446655440002"
+        createdAt:
+          type: string
+          format: date-time
+          description: Data de criação
+          example: "2025-07-10T08:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Data da última atualização
+          example: "2025-07-10T08:00:00Z"
+
+    TaskPriority:
+      type: string
+      enum:
+        - LOW
+        - MEDIUM
+        - HIGH
+      description: Prioridade da tarefa
+      example: "HIGH"
+
+    TaskStatus:
+      type: string
+      enum:
+        - PENDING
+        - IN_PROGRESS
+        - COMPLETED
+      description: Status da tarefa
+      example: "IN_PROGRESS"
+
+    CreateTaskRequest:
+      type: object
+      required:
+        - title
+        - priority
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Título da tarefa
+          example: "Implementar API de autenticação"
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+          description: Descrição da tarefa
+          example: "Desenvolver endpoints de login e registro"
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+        dueDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Data de vencimento
+          example: "2025-07-15T09:00:00Z"
+        estimatedTime:
+          type: integer
+          minimum: 1
+          maximum: 1440
+          nullable: true
+          description: Tempo estimado em minutos
+          example: 240
+        categoryId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID da categoria
+          example: "550e8400-e29b-41d4-a716-446655440001"
+
+    UpdateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+          nullable: true
+          description: Título da tarefa
+          example: "Implementar API de autenticação - Atualizado"
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+          description: Descrição da tarefa
+          example: "Desenvolver endpoints completos com testes"
+        priority:
+          allOf:
+            - $ref: '#/components/schemas/TaskPriority'
+          nullable: true
+        status:
+          allOf:
+            - $ref: '#/components/schemas/TaskStatus'
+          nullable: true
+        dueDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Data de vencimento
+          example: "2025-07-20T09:00:00Z"
+        estimatedTime:
+          type: integer
+          minimum: 1
+          maximum: 1440
+          nullable: true
+          description: Tempo estimado em minutos
+          example: 300
+        categoryId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID da categoria
+          example: "550e8400-e29b-41d4-a716-446655440001"
+
+    TaskStatsResponse:
+      type: object
+      required:
+        - total
+        - completed
+        - pending
+        - overdue
+        - completionRate
+        - byPriority
+        - byCategory
+      properties:
+        total:
+          type: integer
+          description: Total de tarefas
+          example: 25
+        completed:
+          type: integer
+          description: Tarefas concluídas
+          example: 15
+        pending:
+          type: integer
+          description: Tarefas pendentes
+          example: 8
+        overdue:
+          type: integer
+          description: Tarefas atrasadas
+          example: 2
+        completionRate:
+          type: number
+          format: double
+          description: Taxa de conclusão (0.0 - 1.0)
+          example: 0.6
+        byPriority:
+          type: object
+          description: Distribuição por prioridade
+          properties:
+            LOW:
+              type: integer
+              example: 5
+            MEDIUM:
+              type: integer
+              example: 12
+            HIGH:
+              type: integer
+              example: 8
+        byCategory:
+          type: array
+          description: Distribuição por categoria
+          items:
+            type: object
+            properties:
+              categoryId:
+                type: string
+                format: uuid
+                example: "550e8400-e29b-41d4-a716-446655440001"
+              categoryName:
+                type: string
+                example: "Desenvolvimento"
+              count:
+                type: integer
+                example: 12
+
+    # =============================================================================
+    # TIME ENTRY SCHEMAS
+    # =============================================================================
+    TimeEntry:
+      type: object
+      required:
+        - id
+        - taskId
+        - userId
+        - startTime
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID único do registro
+          example: "550e8400-e29b-41d4-a716-446655440003"
+        taskId:
+          type: string
+          format: uuid
+          description: ID da tarefa associada
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        userId:
+          type: string
+          format: uuid
+          description: ID do usuário
+          example: "550e8400-e29b-41d4-a716-446655440002"
+        startTime:
+          type: string
+          format: date-time
+          description: Horário de início
+          example: "2025-07-10T09:00:00Z"
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Horário de fim (null se ativo)
+          example: "2025-07-10T11:30:00Z"
+        duration:
+          type: integer
+          nullable: true
+          minimum: 0
+          description: Duração em segundos
+          example: 9000
+        description:
+          type: string
+          nullable: true
+          description: Descrição do trabalho realizado
+          example: "Implementação dos endpoints de autenticação"
+        createdAt:
+          type: string
+          format: date-time
+          description: Data de criação
+          example: "2025-07-10T09:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Data da última atualização
+          example: "2025-07-10T11:30:00Z"
+
+    CreateTimeEntryRequest:
+      type: object
+      required:
+        - taskId
+      properties:
+        taskId:
+          type: string
+          format: uuid
+          description: ID da tarefa
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        description:
+          type: string
+          nullable: true
+          maxLength: 500
+          description: Descrição do trabalho
+          example: "Trabalhando na implementação da API"
+        startTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Horário de início (default: agora)
+          example: "2025-07-10T09:00:00Z"
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Horário de fim
+          example: "2025-07-10T11:30:00Z"
+        duration:
+          type: integer
+          nullable: true
+          minimum: 0
+          description: Duração em segundos
+          example: 9000
+
+    UpdateTimeEntryRequest:
+      type: object
+      properties:
+        taskId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID da tarefa
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        description:
+          type: string
+          nullable: true
+          maxLength: 500
+          description: Descrição do trabalho
+          example: "Trabalhando na implementação da API - Atualizado"
+        startTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Horário de início
+          example: "2025-07-10T09:15:00Z"
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Horário de fim
+          example: "2025-07-10T11:45:00Z"
+        duration:
+          type: integer
+          nullable: true
+          minimum: 0
+          description: Duração em segundos
+          example: 9600
+
+    StartTimerRequest:
+      type: object
+      required:
+        - taskId
+      properties:
+        taskId:
+          type: string
+          format: uuid
+          description: ID da tarefa
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        description:
+          type: string
+          nullable: true
+          maxLength: 500
+          description: Descrição do trabalho
+          example: "Iniciando trabalho na API"
+
+    TimeStatsResponse:
+      type: object
+      required:
+        - totalTime
+        - totalEntries
+        - averagePerDay
+        - byTask
+        - byCategory
+        - dailyBreakdown
+      properties:
+        totalTime:
+          type: integer
+          description: Tempo total em segundos
+          example: 86400
+        totalEntries:
+          type: integer
+          description: Total de registros
+          example: 45
+        averagePerDay:
+          type: number
+          format: double
+          description: Média por dia em segundos
+          example: 14400.5
+        mostProductiveDay:
+          type: string
+          nullable: true
+          description: Dia mais produtivo
+          example: "2025-07-08"
+        byTask:
+          type: array
+          description: Distribuição por tarefa
+          items:
+            type: object
+            properties:
+              taskId:
+                type: string
+                format: uuid
+                example: "550e8400-e29b-41d4-a716-446655440000"
+              taskTitle:
+                type: string
+                example: "Implementar API"
+              totalTime:
+                type: integer
+                example: 28800
+              percentage:
+                type: number
+                format: double
+                example: 33.3
+        byCategory:
+          type: array
+          description: Distribuição por categoria
+          items:
+            type: object
+            properties:
+              categoryId:
+                type: string
+                format: uuid
+                example: "550e8400-e29b-41d4-a716-446655440001"
+              categoryName:
+                type: string
+                example: "Desenvolvimento"
+              totalTime:
+                type: integer
+                example: 57600
+              percentage:
+                type: number
+                format: double
+                example: 66.7
+        dailyBreakdown:
+          type: array
+          description: Breakdown diário
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+                example: "2025-07-10"
+              totalTime:
+                type: integer
+                example: 14400
+              entries:
+                type: integer
+                example: 3
+
+    # =============================================================================
+    # CATEGORY SCHEMAS
+    # =============================================================================
+    Category:
+      type: object
+      required:
+        - id
+        - name
+        - color
+        - userId
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID único da categoria
+          example: "550e8400-e29b-41d4-a716-446655440001"
+        name:
+          type: string
+          description: Nome da categoria
+          example: "Desenvolvimento"
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: Cor em formato HEX
+          example: "#2196F3"
+        description:
+          type: string
+          nullable: true
+          description: Descrição da categoria
+          example: "Tarefas relacionadas ao desenvolvimento de software"
+        userId:
+          type: string
+          format: uuid
+          description: ID do usuário proprietário
+          example: "550e8400-e29b-41d4-a716-446655440002"
+        createdAt:
+          type: string
+          format: date-time
+          description: Data de criação
+          example: "2025-07-01T00:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Data da última atualização
+          example: "2025-07-01T00:00:00Z"
+
+    CreateCategoryRequest:
+      type: object
+      required:
+        - name
+        - color
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Nome da categoria
+          example: "Desenvolvimento"
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: Cor em formato HEX
+          example: "#2196F3"
+        description:
+          type: string
+          maxLength: 255
+          nullable: true
+          description: Descrição da categoria
+          example: "Tarefas relacionadas ao desenvolvimento"
+
+    UpdateCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+          nullable: true
+          description: Nome da categoria
+          example: "Desenvolvimento Web"
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          nullable: true
+          description: Cor em formato HEX
+          example: "#1976D2"
+        description:
+          type: string
+          maxLength: 255
+          nullable: true
+          description: Descrição da categoria
+          example: "Tarefas relacionadas ao desenvolvimento web"
+
+    # =============================================================================
+    # ERROR SCHEMAS
+    # =============================================================================
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+            - timestamp
+          properties:
+            code:
+              type: string
+              description: Código do erro
+              example: "INVALID_CREDENTIALS"
+            message:
+              type: string
+              description: Mensagem de erro amigável
+              example: "Email ou senha inválidos"
+            details:
+              type: string
+              nullable: true
+              description: Detalhes técnicos do erro
+              example: "Authentication failed for user with email: user@example.com"
+            timestamp:
+              type: string
+              format: date-time
+              description: Timestamp do erro
+              example: "2025-07-10T10:00:00Z"
+
+tags:
+  - name: Authentication
+    description: Endpoints de autenticação e gerenciamento de usuários
+  - name: Tasks
+    description: Operações CRUD para tarefas e funcionalidades relacionadas
+  - name: Time Entries
+    description: Gerenciamento de registros de tempo e cronômetros
+  - name: Categories
+    description: Operações CRUD para categorias de tarefas

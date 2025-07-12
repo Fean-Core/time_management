@@ -1,0 +1,436 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+impo                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );models/task.dart';
+import '../providers/time_tracking_provider.dart';
+import '../providers/task_provider.dart';
+import '../services/task_service.dart';
+
+class TimerWidget extends StatelessWidget {
+  const TimerWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<TimeTrackingProvider>(
+      builder: (context, timeProvider, child) {
+        return Center(
+          child: Container(
+            constraints: const BoxConstraints(
+              maxWidth: 500, // Largura máxima aumentada
+              minWidth: 350, // Largura mínima garantida
+            ),
+            child: Card(
+              elevation: 4,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Padding(
+                padding: const EdgeInsets.all(24), // Padding aumentado
+                child: Column(
+              children: [
+                Text(
+                  'Cronômetro',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                
+                // Display do tempo
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    timeProvider.formattedCurrentDuration,
+                    style: const TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Status e controles
+                if (timeProvider.isTimerRunning) ...[
+                  Text(
+                    'Trabalhando em: ${timeProvider.currentRunningTimer?.description ?? "Tarefa"}',
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 15),
+                  ElevatedButton.icon(
+                    onPressed: () => timeProvider.stopTimer(),
+                    icon: const Icon(Icons.stop),
+                    label: const Text('Parar'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ] else ...[
+                  const Text(
+                    'Nenhum cronômetro ativo',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 15),
+                  ElevatedButton.icon(
+                    onPressed: () => _showStartTimerDialog(context),
+                    icon: const Icon(Icons.play_arrow),
+                    label: const Text('Iniciar'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showStartTimerDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => const StartTimerDialog(),
+    );
+  }
+}
+
+class StartTimerDialog extends StatefulWidget {
+  const StartTimerDialog({super.key});
+
+  @override
+  State<StartTimerDialog> createState() => _StartTimerDialogState();
+}
+
+class _StartTimerDialogState extends State<StartTimerDialog> {
+  final _descriptionController = TextEditingController();
+  Task? _selectedTask;
+
+  @override
+  void initState() {
+    super.initState();
+    // Carregar tarefas quando o dialog for aberto
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<TaskProvider>().loadTasks();
+    });
+    
+    // Listener para atualizar a interface quando o texto mudar
+    _descriptionController.addListener(() {
+      setState(() {});
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<TaskProvider>(
+      builder: (context, taskProvider, child) {
+        return AlertDialog(
+          title: const Text('Iniciar Cronômetro'),
+          contentPadding: const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 24.0),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 400),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                TextField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Descrição do trabalho',
+                    hintText: 'O que você está fazendo?',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Dropdown para seleção de tarefa
+                if (taskProvider.isLoading)
+                  const CircularProgressIndicator()
+                else if (taskProvider.pendingTasks.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.info_outline, color: Colors.grey),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Nenhuma tarefa pendente encontrada.',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: TextButton.icon(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              // Navegar para a tela de tarefas
+                              Navigator.pushNamed(context, '/tasks');
+                            },
+                            icon: const Icon(Icons.add_task),
+                            label: const Text('Criar Nova Tarefa'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Theme.of(context).primaryColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Selecione uma tarefa',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<Task>(
+                        value: _selectedTask,
+                        decoration: InputDecoration(
+                          hintText: 'Selecione uma tarefa para trabalhar...',
+                          hintStyle: TextStyle(color: Colors.grey[600]),
+                          border: const OutlineInputBorder(),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                        ),
+                        items: [
+                          ...taskProvider.pendingTasks.map((task) {
+                            return DropdownMenuItem<Task>(
+                              value: task,
+                              child: Container(
+                                constraints: const BoxConstraints(minHeight: 50),
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                child: Row(
+                                  children: [
+                                    // Indicador de prioridade
+                                    Container(
+                                      width: 4,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: _getPriorityColor(task.priority),
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    // Conteúdo da tarefa
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            task.title,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w500,
+                                              fontSize: 14,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
+                                          ),
+                                          if (task.description != null && task.description!.isNotEmpty)
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 2),
+                                              child: Text(
+                                                task.description!,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey[600],
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                                maxLines: 1,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
+                        ],
+                        onChanged: (Task? task) {
+                          setState(() {
+                            _selectedTask = task;
+                          });
+                        },
+                        isExpanded: true,
+                        menuMaxHeight: 300,
+                        selectedItemBuilder: (BuildContext context) {
+                          return taskProvider.pendingTasks.map<Widget>((Task task) {
+                            return Container(
+                              alignment: Alignment.centerLeft,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 3,
+                                    height: 20,
+                                    decoration: BoxDecoration(
+                                      color: _getPriorityColor(task.priority),
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      task.title,
+                                      style: const TextStyle(fontSize: 14),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList();
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      if (_selectedTask == null && _descriptionController.text.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[50],
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: Colors.blue[200]!),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.info_outline, size: 16, color: Colors.blue[700]),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Uma nova tarefa será criada automaticamente com esta descrição.',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.blue[700],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),                  ],
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: _canStartTimer(taskProvider) ? () async {
+                try {
+                  String taskId;
+                  String description;
+                  
+                  if (_selectedTask != null) {
+                    // Usar tarefa selecionada
+                    taskId = _selectedTask!.id!;
+                    description = _descriptionController.text.isNotEmpty 
+                        ? _descriptionController.text 
+                        : 'Trabalhando em: ${_selectedTask!.title}';
+                  } else {
+                    // Se não há tarefa selecionada, criar uma tarefa temporária
+                    final taskDescription = _descriptionController.text.isNotEmpty 
+                        ? _descriptionController.text 
+                        : 'Trabalho sem tarefa específica';
+                    
+                    // Criar uma tarefa temporária primeiro usando o service diretamente
+                    final taskRequest = CreateTaskRequest(
+                      title: taskDescription.length > 50 
+                          ? '${taskDescription.substring(0, 47)}...'
+                          : taskDescription,
+                      description: taskDescription,
+                      priority: TaskPriority.medium,
+                    );
+                    
+                    final createdTask = await TaskService.createTask(taskRequest);
+                    taskId = createdTask.id!;
+                    description = taskDescription;
+                    
+                    // Atualizar a lista de tarefas no provider
+                    if (context.mounted) {
+                      await context.read<TaskProvider>().loadTasks();
+                    }
+                  }
+                  
+                  if (context.mounted) {
+                    await context.read<TimeTrackingProvider>().startTimer(
+                      taskId,
+                      description: description,
+                    );
+                  }
+                  
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Erro ao iniciar cronômetro: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              } : null,
+              child: const Text('Iniciar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  bool _canStartTimer(TaskProvider taskProvider) {
+    // Pode iniciar se há pelo menos uma descrição (para criar tarefa automaticamente) 
+    // OU uma tarefa foi selecionada
+    return _descriptionController.text.trim().isNotEmpty || _selectedTask != null;
+  }
+
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Color _getPriorityColor(TaskPriority priority) {
+    switch (priority) {
+      case TaskPriority.low:
+        return Colors.green;
+      case TaskPriority.medium:
+        return Colors.orange;
+      case TaskPriority.high:
+        return Colors.red;
+    }
+  }
+}
