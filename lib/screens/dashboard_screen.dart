@@ -29,7 +29,7 @@ class DashboardScreen extends StatelessWidget {
               // Timer Widget
               const TimerWidget(),
               const SizedBox(height: 20),
-              
+
               // Quick Stats
               Consumer<TaskProvider>(
                 builder: (context, taskProvider, child) {
@@ -57,7 +57,7 @@ class DashboardScreen extends StatelessWidget {
                 },
               ),
               const SizedBox(height: 10),
-              
+
               Consumer<TaskProvider>(
                 builder: (context, taskProvider, child) {
                   return Row(
@@ -83,9 +83,9 @@ class DashboardScreen extends StatelessWidget {
                   );
                 },
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // Tarefas Urgentes
               Text(
                 'Tarefas Urgentes',
@@ -94,26 +94,33 @@ class DashboardScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
-              
-              Consumer<TaskProvider>(
-                builder: (context, taskProvider, child) {
-                  final urgentTasks = taskProvider.urgentTasks;
-                  
-                  if (urgentTasks.isEmpty) {
-                    return const Card(
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text('Nenhuma tarefa urgente! 🎉'),
-                      ),
-                    );
-                  }
-                  
-                  return Column(
-                    children: urgentTasks.take(3).map((task) {
-                      return TaskSummaryCard(task: task);
-                    }).toList(),
-                  );
-                },
+              Center(
+                child: Container(
+                  constraints: const BoxConstraints(
+                    maxWidth: 600, // Largura máxima aumentada
+                    minWidth: 350, // Largura mínima garantida
+                  ),
+                  child: Consumer<TaskProvider>(
+                    builder: (context, taskProvider, child) {
+                      final urgentTasks = taskProvider.urgentTasks;
+
+                      if (urgentTasks.isEmpty) {
+                        return const Card(
+                          child: Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Text('Nenhuma tarefa urgente! 🎉'),
+                          ),
+                        );
+                      }
+
+                      return Column(
+                        children: urgentTasks.take(3).map((task) {
+                          return TaskSummaryCard(task: task);
+                        }).toList(),
+                      );
+                    },
+                  ),
+                ),
               ),
             ],
           ),
@@ -122,7 +129,12 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -132,10 +144,7 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               value,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             Text(
               title,

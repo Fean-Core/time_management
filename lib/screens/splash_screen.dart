@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'auth_wrapper.dart';
 import '../widgets/floating_particles.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -123,20 +122,7 @@ class _SplashScreenState extends State<SplashScreen>
   void _navigateToHome() {
     Timer(const Duration(seconds: 14), () {
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const AuthWrapper(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 500),
-          ),
-        );
+        Navigator.of(context).pushReplacementNamed('/auth');
       }
     });
   }

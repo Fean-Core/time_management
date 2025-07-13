@@ -108,6 +108,14 @@ class TaskProvider extends ChangeNotifier {
     return _tasks.where((task) => task.categoryId == categoryId).toList();
   }
 
+  Task? getTaskById(String id) {
+    try {
+      return _tasks.firstWhere((task) => task.id == id);
+    } catch (e) {
+      return null; // Retorna null se a tarefa não for encontrada
+    }
+  }
+
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();

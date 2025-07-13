@@ -31,22 +31,89 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (_formKey.currentState!.validate()) {
       final authProvider = context.read<AuthProvider>();
       
-      final success = await authProvider.register(
-        _nameController.text.trim(),
-        _emailController.text.trim(),
-        _passwordController.text,
-      );
-
-      if (success && mounted) {
-        // Registro bem-sucedido, navegação será tratada pelo main.dart
-      } else if (mounted) {
-        // Mostrar erro
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(authProvider.error ?? 'Erro ao criar conta'),
-            backgroundColor: Colors.red,
-          ),
+      print('🚀 Iniciando registro...');
+      
+      try {
+        // Adicionar timeout manual para evitar loading infinito
+        final success = await authProvider.register(
+          _nameController.text.trim(),
+          _emailController.text.trim(),
+          _passwordController.text,
+        ).timeout(
+          const Duration(seconds: 45), // Timeout de 45 segundos
+          onTimeout: () {
+            print('⏰ Timeout no registro após 45 segundos');
+            throw Exception('Timeout: Servidor demorou para responder. Tente novamente.');
+          },
         );
+
+        print('📋 Resultado do registro: $success');
+
+        if (success && mounted) {
+          print('✅ Registro bem-sucedido - Verificando estado de autenticação');
+          
+          // Mostrar sucesso
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Conta criada com sucesso!'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
+            ),
+          );
+          
+          // Aguardar um pouco mais para garantir que o estado foi atualizado
+          await Future.delayed(const Duration(milliseconds: 1000));
+          
+          if (mounted) {
+            // Verificar se realmente está autenticado
+            print('🔍 Verificando estado final: isAuthenticated=${authProvider.isAuthenticated}');
+            print('🔍 User: ${authProvider.user?.name}');
+            
+            if (authProvider.isAuthenticated && authProvider.user != null) {
+              print('✅ Estado autenticado confirmado - Navegando para home');
+              // Usar Navigator.pushReplacement para substituir completamente
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                '/home', 
+                (route) => false,
+              );
+            } else {
+              print('⚠️ Estado inconsistente - Forçando navegação para AuthWrapper');
+              // Aguardar mais um pouco e tentar novamente
+              await Future.delayed(const Duration(milliseconds: 500));
+              
+              if (mounted) {
+                // Forçar uma nova verificação do AuthWrapper
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  '/auth', 
+                  (route) => false,
+                );
+              }
+            }
+          }
+        } else if (mounted) {
+          print('❌ Erro no registro');
+          // Mostrar erro
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(authProvider.error ?? 'Erro ao criar conta'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      } catch (e) {
+        print('❌ Timeout ou erro no registro: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString().contains('Timeout') 
+                  ? 'Timeout: Servidor demorou para responder. Tente novamente.' 
+                  : 'Erro: ${e.toString()}'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
       }
     }
   }

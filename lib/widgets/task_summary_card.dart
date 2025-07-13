@@ -104,20 +104,21 @@ class TaskSummaryCard extends StatelessWidget {
               activeColor: Colors.green,
             ),
             // Menu de opções
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
-              onSelected: (value) => _handleMenuAction(context, value),
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'edit',
-                  child: Row(
-                    children: [
-                      Icon(Icons.edit, size: 18),
-                      SizedBox(width: 8),
-                      Text('Editar'),
-                    ],
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert),
+                onSelected: (value) => _handleMenuAction(context, value),
+                itemBuilder: (context) => [
+                if (!task.isCompleted) 
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit, size: 18),
+                        SizedBox(width: 8),
+                        Text('Editar'),
+                      ],
+                    ),
                   ),
-                ),
                 const PopupMenuItem(
                   value: 'delete',
                   child: Row(
@@ -128,8 +129,9 @@ class TaskSummaryCard extends StatelessWidget {
                     ],
                   ),
                 ),
-              ],
-            ),
+                ],
+              ),
+          
           ],
         ),
         onTap: () => _showTaskDetails(context),

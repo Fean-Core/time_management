@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ApiService {
   static late Dio _dio;
-  static const String baseUrl = 'https://time-magagement-backend.onrender.com/api'; // Configurar conforme necessário
+  static const String baseUrl = 'https://time-magagement-backend.onrender.com/api'; // Backend em produção
   static Function()? onAuthError; // Callback para erro de autenticação
   
   static void initialize() {
@@ -13,10 +13,11 @@ class ApiService {
       baseUrl: baseUrl,
       headers: {
         'Content-Type': 'application/json',
-        // Não adicionar headers CORS aqui - deve ser feito no servidor
+        'User-Agent': 'TimeManagementApp/1.0.0 (Flutter)', // Adicionar User-Agent
       },
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
+      connectTimeout: const Duration(seconds: 60), // Aumentar timeout para mobile
+      receiveTimeout: const Duration(seconds: 60), // Aumentar timeout para mobile
+      sendTimeout: const Duration(seconds: 60), // Adicionar send timeout
     ));
     
     // Configurar adapter para Web se necessário

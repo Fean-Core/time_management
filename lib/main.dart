@@ -6,6 +6,11 @@ import 'providers/task_provider.dart';
 import 'providers/time_tracking_provider.dart';
 import 'providers/category_provider.dart';
 import 'screens/splash_screen.dart';
+import 'screens/auth_wrapper.dart';
+import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
+import 'screens/home_screen.dart';
+import 'screens/tasks_screen.dart';
 
 void main() {
   // Inicializar serviços
@@ -37,7 +42,7 @@ class MyApp extends StatelessWidget {
             title: 'Gestão de Tempo',
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color.fromARGB(255, 112, 6, 182),
+                seedColor: const Color.fromARGB(232, 18, 72, 248),
                 brightness: Brightness.light,
               ),
               useMaterial3: true,
@@ -55,7 +60,15 @@ class MyApp extends StatelessWidget {
                 shape: CircleBorder(),
               ),
             ),
-            home: const SplashScreen(),
+            initialRoute: '/',
+            routes: {
+              '/': (context) => const SplashScreen(),
+              '/auth': (context) => const AuthWrapper(),
+              '/login': (context) => const LoginScreen(),
+              '/register': (context) => const RegisterScreen(),
+              '/home': (context) => const HomeScreen(),
+              '/tasks': (context) => const TasksScreen(),
+            },
             debugShowCheckedModeBanner: false,
           );
         },

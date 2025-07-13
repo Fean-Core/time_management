@@ -90,20 +90,44 @@ O sistema está configurado com dados mock para funcionar sem backend:
 Para executar o app:
 
 ```bash
-# No terminal
+# No terminal (desenvolvimento)
 flutter run
 
 # Ou para web
 flutter run -d chrome
+
+# Para gerar APK (produção)
+flutter build apk --release
 ```
 
-### 🐛 Solução de Problemas
+### � APK Release
 
-Se o login não funcionar:
-1. Verifique se está usando a senha `123456`
+Se o APK não funcionar no celular:
+
+1. **Verifique a internet**: WiFi ou dados móveis ativos
+2. **Logs de debug**: Conecte via USB e execute `adb logcat | grep flutter`
+3. **Backend online**: Verifique se `https://time-magagement-backend.onrender.com` está acessível
+4. **Consulte**: `APK_BUILD_GUIDE.md` para solução completa
+
+### �🐛 Solução de Problemas
+
+#### No Desenvolvimento (flutter run):
+1. Verifique se está usando as credenciais corretas
 2. Verifique se o email contém `@`
 3. Aguarde o loading aparecer e desaparecer
 4. Verifique o console para erros
+
+#### No APK Release:
+1. **Erro de conexão**: Verifique internet e backend online
+2. **Timeout**: Conexão lenta, tente em WiFi
+3. **Permissões**: Android pode estar bloqueando conexões de rede
+4. **Certificado SSL**: Problemas com HTTPS
+
+#### Logs Úteis para Debug:
+- `🔐 Tentando login para: email@exemplo.com`
+- `🌐 URL do backend: https://...`
+- `✅ Login response status: 200`
+- `❌ Erro no login - Tipo: connectionError`
 
 ---
 

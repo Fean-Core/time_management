@@ -13,10 +13,15 @@ class AuthService {
     }
 
     try {
+      print('🔐 Tentando login para: $email');
+      print('🌐 URL do backend: ${ApiService.dio.options.baseUrl}');
+      
       final response = await ApiService.dio.post('/auth/login', data: {
         'email': email,
         'password': password,
       });
+
+      print('✅ Login response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -45,12 +50,28 @@ class AuthService {
       }
       return null;
     } on DioException catch (e) {
-      print('Erro no login: ${e.message}');
-      print('Response data: ${e.response?.data}');
-      if (e.response?.statusCode == 401) {
+      print('❌ Erro no login - Tipo: ${e.type}');
+      print('❌ Erro no login - Message: ${e.message}');
+      print('❌ Erro no login - Response status: ${e.response?.statusCode}');
+      print('❌ Erro no login - Response data: ${e.response?.data}');
+      print('❌ Erro no login - Request URL: ${e.requestOptions.uri}');
+      
+      if (e.type == DioExceptionType.connectionTimeout) {
+        throw Exception('Timeout de conexão. Verifique sua internet.');
+      } else if (e.type == DioExceptionType.receiveTimeout) {
+        throw Exception('Timeout ao receber dados. Verifique sua internet.');
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw Exception('Erro de conexão. Verifique sua internet e tente novamente.');
+      } else if (e.response?.statusCode == 401) {
         throw Exception('Email ou senha inválidos');
+      } else if (e.response?.statusCode == 500) {
+        throw Exception('Erro interno do servidor. Tente novamente em alguns minutos.');
+      } else {
+        throw Exception('Erro de conexão: ${e.message ?? 'Erro desconhecido'}');
       }
-      throw Exception('Erro de conexão: ${e.message}');
+    } catch (e) {
+      print('❌ Erro inesperado no login: $e');
+      throw Exception('Erro inesperado: $e');
     }
   }
 
@@ -61,11 +82,24 @@ class AuthService {
     }
 
     try {
-      final response = await ApiService.dio.post('/auth/register', data: {
-        'name': name,
-        'email': email,
-        'password': password,
-      });
+      print('📝 Tentando registro para: $email');
+      print('👤 Nome: $name');
+      print('🌐 URL do backend: ${ApiService.dio.options.baseUrl}');
+      
+      // Fazer a requisição com timeout específico para registro
+      final response = await ApiService.dio.post('/auth/register', 
+        data: {
+          'name': name,
+          'email': email,
+          'password': password,
+        },
+        options: Options(
+          receiveTimeout: const Duration(seconds: 30), // Timeout específico para registro
+          sendTimeout: const Duration(seconds: 30),
+        ),
+      );
+
+      print('✅ Registro response status: ${response.statusCode}');
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final data = response.data;
@@ -94,12 +128,47 @@ class AuthService {
       }
       return null;
     } on DioException catch (e) {
-      print('Erro no registro: ${e.message}');
-      print('Response data: ${e.response?.data}');
-      if (e.response?.statusCode == 400) {
-        throw Exception('Email já cadastrado');
+      print('❌ Erro no registro - Tipo: ${e.type}');
+      print('❌ Erro no registro - Message: ${e.message}');
+      print('❌ Erro no registro - Response status: ${e.response?.statusCode}');
+      print('❌ Erro no registro - Response data: ${e.response?.data}');
+      print('❌ Erro no registro - Request URL: ${e.requestOptions.uri}');
+      
+      if (e.type == DioExceptionType.connectionTimeout) {
+        throw Exception('Timeout de conexão. Verifique sua internet e tente novamente.');
+      } else if (e.type == DioExceptionType.receiveTimeout) {
+        throw Exception('Servidor demorou para responder. Tente novamente.');
+      } else if (e.type == DioExceptionType.sendTimeout) {
+        throw Exception('Timeout ao enviar dados. Verifique sua internet.');
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw Exception('Sem conexão com o servidor. Verifique sua internet.');
+      } else if (e.response?.statusCode == 400) {
+        // Verificar se é erro de email já existente ou validação
+        final responseData = e.response?.data;
+        if (responseData is Map && responseData['message'] != null) {
+          final message = responseData['message'].toString();
+          if (message.toLowerCase().contains('email')) {
+            throw Exception('Este email já está cadastrado. Use outro email.');
+          } else if (message.toLowerCase().contains('password')) {
+            throw Exception('Senha deve ter pelo menos 6 caracteres.');
+          } else {
+            throw Exception('Dados inválidos: $message');
+          }
+        } else {
+          throw Exception('Email já cadastrado ou dados inválidos.');
+        }
+      } else if (e.response?.statusCode == 422) {
+        throw Exception('Dados inválidos. Verifique email e senha.');
+      } else if (e.response?.statusCode == 500) {
+        throw Exception('Erro no servidor. Tente novamente em alguns minutos.');
+      } else if (e.response?.statusCode == 503) {
+        throw Exception('Servidor temporariamente indisponível. Tente mais tarde.');
+      } else {
+        throw Exception('Erro de conexão: ${e.message ?? 'Erro desconhecido'}');
       }
-      throw Exception('Erro de conexão: ${e.message}');
+    } catch (e) {
+      print('❌ Erro inesperado no registro: $e');
+      throw Exception('Erro inesperado: $e');
     }
   }
 
@@ -110,9 +179,11 @@ class AuthService {
     }
 
     try {
+      print('🔍 AuthService: Verificando usuário atual...');
       final response = await ApiService.dio.get('/auth/me');
 
       if (response.statusCode == 200) {
+        print('✅ AuthService: Usuário validado no servidor');
         final userApi = response.data;
         return User(
           id: userApi['id'] ?? '',
@@ -129,10 +200,22 @@ class AuthService {
           ),
         );
       }
+      
+      print('⚠️ AuthService: Resposta não OK: ${response.statusCode}');
       return null;
-    } on DioException catch (e) {
-      print('Erro ao obter usuário: ${e.message}');
-      return null;
+    } catch (e) {
+      print('❌ AuthService.getCurrentUser: Erro - $e');
+      
+      // Re-throw with more specific error info
+      if (e.toString().contains('401')) {
+        throw Exception('UNAUTHORIZED');
+      } else if (e.toString().contains('500')) {
+        throw Exception('SERVER_ERROR');
+      } else if (e.toString().contains('network') || e.toString().contains('timeout')) {
+        throw Exception('NETWORK_ERROR');
+      } else {
+        throw Exception('UNKNOWN_ERROR: $e');
+      }
     }
   }
 
