@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/task.dart';
 import '../providers/task_provider.dart';
+import '../screens/edit_task_screen.dart';
 
 class TaskSummaryCard extends StatelessWidget {
   final Task task;
@@ -75,6 +76,24 @@ class TaskSummaryCard extends StatelessWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Indicador de edição
+            if (task.isEdited)
+              Container(
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.orange,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Text(
+                  'EDITADO',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             // Mostrar indicador de atraso se necessário
             if (!task.isCompleted && task.deadline != null && _isOverdue(task.deadline!))
               Container(
@@ -257,6 +276,47 @@ class TaskSummaryCard extends StatelessWidget {
                   ),
                 ),
               ],
+              // Informações de edição
+              if (task.isEdited) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.edit, color: Colors.orange.shade700, size: 16),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Tarefa Editada',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange.shade700,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (task.lastEditedAt != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Última edição: ${DateFormat('dd/MM/yyyy HH:mm').format(task.lastEditedAt!)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.orange.shade600,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -279,13 +339,16 @@ class TaskSummaryCard extends StatelessWidget {
   }
 
   void _showEditTaskDialog(BuildContext context) {
-    // TODO: Implementar dialog de edição
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Funcionalidade de edição será implementada em breve'),
-        backgroundColor: Colors.blue,
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => EditTaskScreen(task: task),
       ),
-    );
+    ).then((result) {
+      // Se a edição foi bem-sucedida, recarregar a lista de tarefas
+      if (result == true && context.mounted) {
+        context.read<TaskProvider>().loadTasks();
+      }
+    });
   }
 
   void _showDeleteConfirmationDialog(BuildContext context) {

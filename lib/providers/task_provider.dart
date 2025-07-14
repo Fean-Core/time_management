@@ -72,6 +72,39 @@ class TaskProvider extends ChangeNotifier {
     }
   }
 
+  /// Editar tarefa com rastreamento de edição
+  Future<void> editTask(String id, UpdateTaskRequest request, String? currentUserId) async {
+    _setLoading(true);
+    _setError(null);
+    
+    try {
+      // Criar uma versão do request que inclui os dados de edição
+      final editedRequest = UpdateTaskWithEditTrackingRequest(
+        title: request.title,
+        description: request.description,
+        priority: request.priority,
+        status: request.status,
+        dueDate: request.dueDate,
+        estimatedTime: request.estimatedTime,
+        categoryId: request.categoryId,
+        lastEditedBy: currentUserId,
+        lastEditedAt: DateTime.now(),
+        isEdited: true,
+      );
+
+      final updatedTask = await TaskService.updateTaskWithEditTracking(id, editedRequest);
+      final index = _tasks.indexWhere((t) => t.id == updatedTask.id);
+      if (index != -1) {
+        _tasks[index] = updatedTask;
+        notifyListeners();
+      }
+    } catch (e) {
+      _setError(e.toString());
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   Future<void> deleteTask(String id) async {
     _setLoading(true);
     _setError(null);

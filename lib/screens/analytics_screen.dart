@@ -38,30 +38,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Relatórios'),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-        actions: [
-          PopupMenuButton<String>(
-            initialValue: _selectedPeriod,
-            onSelected: (value) {
-              setState(() {
-                _selectedPeriod = value;
-              });
-              // Recarregar dados quando o período mudar
-              if (mounted) {
-                _loadDataForPeriod();
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'Dia', child: Text('Dia')),
-              const PopupMenuItem(value: 'Semana', child: Text('Semana')),
-              const PopupMenuItem(value: 'Mês', child: Text('Mês')),
-            ],
-          ),
-        ],
-      ),
+      backgroundColor: Colors.transparent,
+      appBar: null,
       body: RefreshIndicator(
         onRefresh: () async {
           await context.read<TaskProvider>().loadTasks();

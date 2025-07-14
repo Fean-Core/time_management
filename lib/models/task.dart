@@ -54,6 +54,9 @@ class Task {
   final String userId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String? lastEditedBy; // ID do usuário que editou por último
+  final DateTime? lastEditedAt; // Data da última edição
+  final bool isEdited; // Flag para indicar se foi editada
 
   Task({
     this.id,
@@ -67,6 +70,9 @@ class Task {
     required this.userId,
     this.createdAt,
     this.updatedAt,
+    this.lastEditedBy,
+    this.lastEditedAt,
+    this.isEdited = false,
   });
 
   factory Task.fromJson(Map<String, dynamic> json) {
@@ -82,6 +88,9 @@ class Task {
       userId: json['userId'] ?? '',
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+      lastEditedBy: json['lastEditedBy'],
+      lastEditedAt: json['lastEditedAt'] != null ? DateTime.parse(json['lastEditedAt']) : null,
+      isEdited: json['isEdited'] ?? false,
     );
   }
 
@@ -98,6 +107,9 @@ class Task {
       'userId': userId,
       if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
       if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
+      if (lastEditedBy != null) 'lastEditedBy': lastEditedBy,
+      if (lastEditedAt != null) 'lastEditedAt': lastEditedAt!.toIso8601String(),
+      'isEdited': isEdited,
     };
   }
 
@@ -125,6 +137,9 @@ class Task {
     String? userId,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? lastEditedBy,
+    DateTime? lastEditedAt,
+    bool? isEdited,
   }) {
     return Task(
       id: id ?? this.id,
@@ -138,6 +153,9 @@ class Task {
       userId: userId ?? this.userId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      lastEditedBy: lastEditedBy ?? this.lastEditedBy,
+      lastEditedAt: lastEditedAt ?? this.lastEditedAt,
+      isEdited: isEdited ?? this.isEdited,
     );
   }
 }
@@ -201,6 +219,48 @@ class UpdateTaskRequest {
     if (dueDate != null) data['dueDate'] = dueDate!.toIso8601String();
     if (estimatedTime != null) data['estimatedTime'] = estimatedTime;
     if (categoryId != null) data['categoryId'] = categoryId;
+    return data;
+  }
+}
+
+// DTO para atualização de tarefas com rastreamento de edição
+class UpdateTaskWithEditTrackingRequest {
+  final String? title;
+  final String? description;
+  final TaskPriority? priority;
+  final TaskStatus? status;
+  final DateTime? dueDate;
+  final int? estimatedTime;
+  final String? categoryId;
+  final String? lastEditedBy;
+  final DateTime? lastEditedAt;
+  final bool? isEdited;
+
+  UpdateTaskWithEditTrackingRequest({
+    this.title,
+    this.description,
+    this.priority,
+    this.status,
+    this.dueDate,
+    this.estimatedTime,
+    this.categoryId,
+    this.lastEditedBy,
+    this.lastEditedAt,
+    this.isEdited,
+  });
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = {};
+    if (title != null) data['title'] = title;
+    if (description != null) data['description'] = description;
+    if (priority != null) data['priority'] = priority!.value;
+    if (status != null) data['status'] = status!.value;
+    if (dueDate != null) data['dueDate'] = dueDate!.toIso8601String();
+    if (estimatedTime != null) data['estimatedTime'] = estimatedTime;
+    if (categoryId != null) data['categoryId'] = categoryId;
+    if (lastEditedBy != null) data['lastEditedBy'] = lastEditedBy;
+    if (lastEditedAt != null) data['lastEditedAt'] = lastEditedAt!.toIso8601String();
+    if (isEdited != null) data['isEdited'] = isEdited;
     return data;
   }
 }

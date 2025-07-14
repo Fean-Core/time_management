@@ -1,9 +1,11 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/task.dart';
 import '../providers/time_tracking_provider.dart';
 import '../providers/task_provider.dart';
 import '../services/task_service.dart';
+import 'modern_background.dart';
 
 class TimerWidget extends StatelessWidget {
   const TimerWidget({super.key});
@@ -15,78 +17,165 @@ class TimerWidget extends StatelessWidget {
         return Center(
           child: Container(
             constraints: const BoxConstraints(
-              maxWidth: 500, // Largura máxima aumentada
-              minWidth: 350, // Largura mínima garantida
+              maxWidth: 350,
+              maxHeight: 350,
             ),
-            child: Card(
-              elevation: 4,
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Padding(
-                padding: const EdgeInsets.all(24), // Padding aumentado
-                child: Column(
+            child: AspectRatio(
+              aspectRatio: 1.0,
+              child: GlassCard(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(24),
+                borderRadius: 200,
+                opacity: 0.2,
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    Text(
-                      'Cronômetro',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    
-                    // Display do tempo
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        timeProvider.formattedCurrentDuration,
-                        style: const TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'monospace',
-                        ),
+                    // Círculo de progresso de fundo (cinza)
+                    CustomPaint(
+                      size: const Size(300, 300),
+                      painter: CircularProgressPainter(
+                        progress: 1.0,
+                        color: Colors.white.withValues(alpha: 0.3),
+                        strokeWidth: 8,
                       ),
                     ),
                     
-                    const SizedBox(height: 20),
+                    // Círculo de progresso principal (branco brilhante)
+                    CustomPaint(
+                      size: const Size(300, 300),
+                      painter: CircularProgressPainter(
+                        progress: _getProgressValue(timeProvider),
+                        color: Colors.white,
+                        strokeWidth: 8,
+                      ),
+                    ),
                     
-                    // Status e controles
-                    if (timeProvider.isTimerRunning) ...[
-                      Text(
-                        'Trabalhando em: ${timeProvider.currentRunningTimer?.description ?? "Tarefa"}',
-                        style: const TextStyle(fontSize: 14, color: Colors.grey),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 15),
-                      ElevatedButton.icon(
-                        onPressed: () => timeProvider.stopTimer(),
-                        icon: const Icon(Icons.stop),
-                        label: const Text('Parar'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(120, 45),
+                    // Conteúdo central
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Texto de contexto
+                        if (timeProvider.isTimerRunning)
+                          Text(
+                            timeProvider.currentRunningTimer?.description ?? 'Trabalhando',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          )
+                        else
+                          Text(
+                            'Pronto para começar',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        
+                        const SizedBox(height: 8),
+                        
+                        // Label "FOCUS"
+                        const Text(
+                          'FOCUS',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 16),
+                        
+                        // Timer principal
+                        Text(
+                          timeProvider.formattedCurrentDuration,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 48,
+                            fontWeight: FontWeight.w300,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 8),
+                        
+                        // Tempo adicional (como o "00:00" menor da imagem)
+                        Text(
+                          _getSubTime(timeProvider),
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 16,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 24),
+                        
+                        // Contador de sessões/tarefas
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              _getSessionCount(timeProvider).toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    // Botão de controle posicionado na parte inferior
+                    Positioned(
+                      bottom: 16,
+                      child: GestureDetector(
+                        onTap: () {
+                          if (timeProvider.isTimerRunning) {
+                            timeProvider.stopTimer();
+                          } else {
+                            _showStartTimerDialog(context);
+                          }
+                        },
+                        child: Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: timeProvider.isTimerRunning 
+                                ? const Color(0xFFFF453A) 
+                                : const Color(0xFF34C759), // Verde quando parado
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: (timeProvider.isTimerRunning 
+                                    ? const Color(0xFFFF453A) 
+                                    : const Color(0xFF34C759)).withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            timeProvider.isTimerRunning ? Icons.pause : Icons.play_arrow,
+                            color: Colors.white,
+                            size: 28,
+                          ),
                         ),
                       ),
-                    ] else ...[
-                      const Text(
-                        'Nenhum cronômetro ativo',
-                        style: TextStyle(fontSize: 14, color: Colors.grey),
-                      ),
-                      const SizedBox(height: 15),
-                      ElevatedButton.icon(
-                        onPressed: () => _showStartTimerDialog(context),
-                        icon: const Icon(Icons.play_arrow),
-                        label: const Text('Iniciar'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(120, 45),
-                        ),
-                      ),
-                    ],
+                    ),
                   ],
                 ),
               ),
@@ -102,6 +191,46 @@ class TimerWidget extends StatelessWidget {
       context: context,
       builder: (context) => const StartTimerDialog(),
     );
+  }
+
+  // Funções auxiliares para o timer widget
+  double _getProgressValue(timeProvider) {
+    if (!timeProvider.isTimerRunning) return 0.0;
+    
+    // Calcula progresso baseado no tempo decorrido
+    // Considera 25 minutos como 100% (técnica Pomodoro)
+    const maxSeconds = 25 * 60; // 25 minutos em segundos
+    final elapsedSeconds = timeProvider.currentDuration;
+    final progress = (elapsedSeconds / maxSeconds).clamp(0.0, 1.0);
+    
+    return progress;
+  }
+
+  String _getSubTime(timeProvider) {
+    if (!timeProvider.isTimerRunning) return '00:00';
+    
+    // Mostra tempo até próxima pausa (25 min)
+    const maxSeconds = 25 * 60; // 25 minutos em segundos
+    final elapsedSeconds = timeProvider.currentDuration;
+    final remainingSeconds = (maxSeconds - elapsedSeconds).clamp(0, maxSeconds);
+    
+    final minutes = remainingSeconds ~/ 60;
+    final seconds = remainingSeconds % 60;
+    
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  int _getSessionCount(timeProvider) {
+    // Retorna número de sessões completadas hoje
+    return timeProvider.timeEntries
+        .where((entry) {
+          final today = DateTime.now();
+          final entryDate = entry.startTime;
+          return entryDate.year == today.year &&
+                 entryDate.month == today.month &&
+                 entryDate.day == today.day;
+        })
+        .length;
   }
 }
 
@@ -135,6 +264,7 @@ class _StartTimerDialogState extends State<StartTimerDialog> {
     return Consumer<TaskProvider>(
       builder: (context, taskProvider, child) {
         return AlertDialog(
+          backgroundColor: Colors.white.withOpacity(0.95),
           title: const Text('Iniciar Cronômetro'),
           contentPadding: const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 24.0),
           content: SizedBox(
@@ -432,5 +562,51 @@ class _StartTimerDialogState extends State<StartTimerDialog> {
   void dispose() {
     _descriptionController.dispose();
     super.dispose();
+  }
+}
+
+// Classe para desenhar o círculo de progresso personalizado
+class CircularProgressPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+  final double strokeWidth;
+
+  CircularProgressPainter({
+    required this.progress,
+    required this.color,
+    this.strokeWidth = 6.0,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - strokeWidth) / 2;
+
+    // Configuração do pincel
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    // Desenha o arco de progresso
+    const startAngle = -math.pi / 2; // Começa no topo
+    final sweepAngle = 2 * math.pi * progress;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      startAngle,
+      sweepAngle,
+      false,
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return oldDelegate is CircularProgressPainter &&
+           (oldDelegate.progress != progress ||
+            oldDelegate.color != color ||
+            oldDelegate.strokeWidth != strokeWidth);
   }
 }

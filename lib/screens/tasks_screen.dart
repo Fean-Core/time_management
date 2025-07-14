@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/task_provider.dart';
 import '../models/task.dart';
 import '../widgets/task_summary_card.dart';
+import '../widgets/modern_background.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -29,79 +30,157 @@ class _TasksScreenState extends State<TasksScreen> with TickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tarefas'),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          tabs: const [
-            Tab(text: 'Todas'),
-            Tab(text: 'Pendentes'),
-            Tab(text: 'Concluídas'),
-          ],
-        ),
-      ),
-      body: Consumer<TaskProvider>(
-        builder: (context, taskProvider, child) {
-          if (taskProvider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (taskProvider.error != null) {
-            return Center(
+      backgroundColor: Colors.transparent, // Fundo transparente para mostrar o ModernBackground
+      body: Column(
+        children: [
+          // Header personalizado com vidro fosco
+          SafeArea(
+            bottom: false,
+            child: GlassCard(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error, size: 64, color: Colors.red),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.task_alt,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Tarefas',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 16),
-                  Text(taskProvider.error!),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => taskProvider.loadTasks(),
-                    child: const Text('Tentar Novamente'),
+                  // Tabs personalizadas
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      indicator: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      labelColor: Colors.white,
+                      unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontWeight: FontWeight.w400,
+                        fontSize: 14,
+                      ),
+                      tabs: const [
+                        Tab(text: 'Todas'),
+                        Tab(text: 'Pendentes'),
+                        Tab(text: 'Concluídas'),
+                      ],
+                    ),
                   ),
                 ],
               ),
-            );
-          }
+            ),
+          ),
+          // Conteúdo das tabs
+          Expanded(
+            child: Consumer<TaskProvider>(
+              builder: (context, taskProvider, child) {
+                if (taskProvider.isLoading) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  );
+                }
 
-          return TabBarView(
-            controller: _tabController,
-            children: [
-              _buildTaskList(taskProvider.tasks),
-              _buildTaskList(taskProvider.pendingTasks),
-              _buildTaskList(taskProvider.completedTasks),
-            ],
-          );
-        },
+                if (taskProvider.error != null) {
+                  return Center(
+                    child: SimpleCard(
+                      margin: const EdgeInsets.all(16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.error, size: 64, color: Colors.white),
+                          const SizedBox(height: 16),
+                          Text(
+                            taskProvider.error!,
+                            style: const TextStyle(color: Colors.white),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () => taskProvider.loadTasks(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white.withValues(alpha: 0.2),
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Tentar Novamente'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                return TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildTaskList(taskProvider.tasks),
+                    _buildTaskList(taskProvider.pendingTasks),
+                    _buildTaskList(taskProvider.completedTasks),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: GlassFAB(
         onPressed: () => _showCreateTaskDialog(context),
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
 
   Widget _buildTaskList(List<Task> tasks) {
     if (tasks.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.task, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('Nenhuma tarefa encontrada'),
-          ],
+      return Center(
+        child: SimpleCard(
+          margin: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.task, size: 64, color: Colors.white.withValues(alpha: 0.7)),
+              const SizedBox(height: 16),
+              Text(
+                'Nenhuma tarefa encontrada',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
 
     return RefreshIndicator(
       onRefresh: () => context.read<TaskProvider>().loadTasks(),
+      color: Colors.white,
+      backgroundColor: Colors.transparent,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: tasks.length,

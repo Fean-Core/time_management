@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ApiService {
@@ -109,11 +108,11 @@ class CorsInterceptor extends Interceptor {
         isCorsError = true;
       }
     }
-    
+
     if (isCorsError) {
       print('🚫 ERRO DE CORS DETECTADO');
       print('📱 URL: ${err.requestOptions.uri}');
-      print('� SOLUÇÕES:');
+      print('💡 SOLUÇÕES:');
       print('   1. Execute: flutter run -d linux (Desktop - sem CORS)');
       print('   2. Configure CORS no backend Spring Boot');
       print('   3. Use um proxy reverso');

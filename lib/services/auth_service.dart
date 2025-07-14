@@ -179,11 +179,9 @@ class AuthService {
     }
 
     try {
-      print('🔍 AuthService: Verificando usuário atual...');
       final response = await ApiService.dio.get('/auth/me');
 
       if (response.statusCode == 200) {
-        print('✅ AuthService: Usuário validado no servidor');
         final userApi = response.data;
         return User(
           id: userApi['id'] ?? '',
@@ -200,22 +198,10 @@ class AuthService {
           ),
         );
       }
-      
-      print('⚠️ AuthService: Resposta não OK: ${response.statusCode}');
       return null;
-    } catch (e) {
-      print('❌ AuthService.getCurrentUser: Erro - $e');
-      
-      // Re-throw with more specific error info
-      if (e.toString().contains('401')) {
-        throw Exception('UNAUTHORIZED');
-      } else if (e.toString().contains('500')) {
-        throw Exception('SERVER_ERROR');
-      } else if (e.toString().contains('network') || e.toString().contains('timeout')) {
-        throw Exception('NETWORK_ERROR');
-      } else {
-        throw Exception('UNKNOWN_ERROR: $e');
-      }
+    } on DioException catch (e) {
+      print('Erro ao obter usuário: ${e.message}');
+      return null;
     }
   }
 

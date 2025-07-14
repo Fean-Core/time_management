@@ -5,6 +5,7 @@ import 'providers/auth_provider.dart';
 import 'providers/task_provider.dart';
 import 'providers/time_tracking_provider.dart';
 import 'providers/category_provider.dart';
+import 'widgets/modern_background.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth_wrapper.dart';
 import 'screens/login_screen.dart';
@@ -40,6 +41,9 @@ class MyApp extends StatelessWidget {
 
           return MaterialApp(
             title: 'Gestão de Tempo',
+            builder: (context, child) {
+              return ModernBackground(child: child ?? Container());
+            },
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(
                 seedColor: const Color.fromARGB(232, 18, 72, 248),

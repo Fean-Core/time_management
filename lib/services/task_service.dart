@@ -70,6 +70,19 @@ class TaskService {
     }
   }
 
+  // Atualizar tarefa com rastreamento de edição
+  static Future<Task> updateTaskWithEditTracking(String id, UpdateTaskWithEditTrackingRequest request) async {
+    try {
+      final response = await ApiService.dio.put(
+        '$endpoint/$id',
+        data: request.toJson(),
+      );
+      return Task.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Erro ao atualizar tarefa: $e');
+    }
+  }
+
   // Deletar tarefa
   static Future<void> deleteTask(String id) async {
     try {

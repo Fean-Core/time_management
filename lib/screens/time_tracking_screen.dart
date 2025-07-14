@@ -10,11 +10,8 @@ class TimeTrackingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Rastreamento de Tempo'),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-      ),
+      backgroundColor: Colors.transparent,
+      appBar: null,
       body: Consumer<TimeTrackingProvider>(
         builder: (context, timeProvider, child) {
           if (timeProvider.isLoading) {

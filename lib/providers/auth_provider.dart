@@ -79,25 +79,10 @@ class AuthProvider extends ChangeNotifier {
             await _clearAuthData();
           }
         } catch (e) {
-          // Analisar o tipo de erro para decidir se deve manter o login
-          String errorMsg = e.toString();
-          
-          if (errorMsg.contains('SERVER_ERROR') || errorMsg.contains('NETWORK_ERROR')) {
-            // Erro de servidor ou rede - manter login local
-            print('⚠️ AuthProvider: Erro de servidor/rede, mantendo login local');
-            print('⚠️ AuthProvider: Usuário ${_user?.name} permanece logado offline');
-            // Não limpar dados - manter login local
-          } else if (errorMsg.contains('UNAUTHORIZED')) {
-            // Token realmente inválido - fazer logout
-            print('❌ AuthProvider: Token expirado/inválido (401), fazendo logout');
+          // Se não conseguir validar o token, mas temos dados locais, continuar logado
+          print('⚠️ AuthProvider: Erro ao validar token, mas mantendo login local: $e');
+          if (_user == null) {
             await _clearAuthData();
-          } else if (_user == null) {
-            // Outros erros sem dados locais - limpar
-            print('❌ AuthProvider: Erro sem dados locais, limpando: $errorMsg');
-            await _clearAuthData();
-          } else {
-            // Outros erros mas com dados locais - manter
-            print('⚠️ AuthProvider: Erro desconhecido, mantendo login local: $errorMsg');
           }
         }
       } else {

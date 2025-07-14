@@ -29,7 +29,7 @@ class _FloatingParticlesState extends State<FloatingParticles>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(seconds: 20),
+      duration: const Duration(seconds: 30),
       vsync: this,
     )..repeat();
 
@@ -142,5 +142,7 @@ class ParticlesPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant ParticlesPainter oldDelegate) {
+    return animation.value != oldDelegate.animation.value;
+  }
 }
